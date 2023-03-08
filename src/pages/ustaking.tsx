@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Card from "../components/Ucard";
 import { withdrawNft } from "../context/transaction";
+import { getUserPoolState } from "../context/transaction"
 import { web3 } from '@project-serum/anchor';
 import { useWallet } from "@solana/wallet-adapter-react";
 import { getParsedNftAccountsByOwner } from "@nfteyez/sol-rayz";
@@ -19,7 +20,7 @@ function Ustaking() {
     const wallet = useWallet();
     const [nftList, setNftList] = useState<NFTType[]>([]);
     useEffect(() => {
-        getAllNfts();
+        getUserPoolState(wallet);
         // eslint-disable-next-line
     }, [wallet.publicKey, wallet.connected]);
     const getAllNfts = async () => {

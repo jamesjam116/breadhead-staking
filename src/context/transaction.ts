@@ -1,11 +1,13 @@
 import * as anchor from '@project-serum/anchor';
-import { Program, web3 } from '@project-serum/anchor';
+import { AccountInfo } from '@solana/web3.js'
+import { Coder, Program, web3 } from '@project-serum/anchor';
 import { PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import { ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { TOKEN_PROGRAM_ID } from '@project-serum/anchor/dist/cjs/utils/token';
 import { RPC_URL } from '../config';
 import { WalletContextState } from '@solana/wallet-adapter-react';
 import { IDL } from './staking';
+import { UserPool } from './type';
 
 export const solConnection = new web3.Connection(RPC_URL);
 const METAPLEX = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
@@ -335,6 +337,41 @@ export const getATokenAccountsNeedCreate = async (
         instructions,
         destinationAccounts,
     };
+}
+export function getParser<T>(program: { coder: Coder }, name: string) {
+    return (info: AccountInfo<Buffer>) => program.coder.accounts.decode(name, info.data) as T;
+}
+
+export const getUserPoolState = async (
+    wallet: WalletContextState
+): Promise<UserPool | null> => {
+    if (!wallet.publicKey) return null;
+    const cloneWindow: any = window;
+    const userAddress = wallet.publicKey;
+    //This is  phantom wallet public address
+    console.log(userAddress);
+
+    const provider = new anchor.AnchorProvider(
+        solConnection,
+        cloneWindow["solana"],
+        anchor.AnchorProvider.defaultOptions()
+    );
+    const program = new anchor.Program(
+        IDL as anchor.Idl,
+        PROGRAM_ID,
+        provider
+    );
+    const userPoolKey = await getUserFixedPoolAddr(wallet);
+    if (userPoolKey) {
+        const poolAccount = await solConnection.getAccountInfo(userPoolKey);
+        if (poolAccount === null) return null;
+        const poolState = getParser<UserPool>(program, 'UserPool')(poolAccount);
+
+        console.log('User Pool: ', poolState);
+        return poolState as unknown as UserPool;
+    } else {
+        return null
+    }
 }
 
 export const createAssociatedTokenAccountInstruction = (
