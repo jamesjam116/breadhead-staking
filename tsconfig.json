@@ -23,7 +23,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "src/pages/_app.jsx",
+    "src/pages/_app.tsx",
     "src/pages/raffle/[slug].jsx",
   ],
   "exclude": [

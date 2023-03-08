@@ -1,10 +1,80 @@
 /* eslint-disable @next/next/no-img-element */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Card from "../components/Ucard";
+import { withdrawNft } from "../context/transaction";
+import { web3 } from '@project-serum/anchor';
+import { useWallet } from "@solana/wallet-adapter-react";
+import { getParsedNftAccountsByOwner } from "@nfteyez/sol-rayz";
+import { CREATOR_ADDRESS } from "../config";
+import Skeleton from '@mui/material/Skeleton';
 
+export interface NFTType {
+    imgUrl: string;
+    tokenId: string;
+    description: string;
+    mint: string
+}
 function Ustaking() {
+    const [isPageLoading, setIsPageLoading] = useState(false);
+    const wallet = useWallet();
+    const [nftList, setNftList] = useState<NFTType[]>([]);
+    useEffect(() => {
+        getAllNfts();
+        // eslint-disable-next-line
+    }, [wallet.publicKey, wallet.connected]);
+    const getAllNfts = async () => {
+        setIsPageLoading(true);
+        const solConnection = new web3.Connection(web3.clusterApiUrl("devnet"));
+        if (wallet.publicKey === null) return;
+        try {
+            const nftList = await getParsedNftAccountsByOwner({
+                publicAddress: wallet.publicKey.toBase58(),
+                connection: solConnection,
+            });
+            console.log(nftList);
+
+            let list: NFTType[] = [];
+            if (nftList.length > 0) {
+                for (let item of nftList) {
+                    if (item.data?.creators)
+                        if (item.data?.creators[0].address === CREATOR_ADDRESS) {
+                            {
+                                console.log(item);
+
+                                try {
+                                    const response = await fetch(item?.data.uri, {
+                                        method: "GET",
+                                    });
+
+                                    const responsedata = await response.json();
+
+                                    list.push({
+                                        imgUrl: responsedata.image,
+                                        tokenId: item?.data.name,
+                                        description: responsedata.description,
+                                        mint: item.mint
+
+                                    });
+
+                                } catch (error) {
+                                    console.error("Unable to fetch data:", error);
+                                }
+                            }
+                        }
+                }
+            }
+
+            console.log("nftList =>", list)
+            setNftList(list);
+            setIsPageLoading(false);
+        } catch (error) {
+            console.log(error);
+            setIsPageLoading(false);
+        }
+
+    };
     return (
-        <section className="justify-between overflow-hidden flex flex-col ml-[1px] w-full h-[654px] mb-6 rounded-[10px] mr-4">
+        <section className="justify-between overflow-hidden flex flex-col ml-[1px] w-full  mb-6 rounded-[10px] mr-4">
             <div className="flex justify-between pb-3">
                 <h4 className="text-[14px] text-black-100 pt-3 pl-3 font-bold">Staking</h4>
             </div>
@@ -21,11 +91,16 @@ function Ustaking() {
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-4 ml-3">
-                        <Card imgUrl="https://img-cdn.magiceden.dev/rs:fill:400:400:0:0/plain/https://nftstorage.link/ipfs/bafybeicue33bcjgcu6mksfy4i5ova3igaw6va3qhvhau6w7kfazl2cif2q/1927.png" name="#436" description="No stake level currently" />
-                        <Card imgUrl="https://img-cdn.magiceden.dev/rs:fill:400:400:0:0/plain/https://nftstorage.link/ipfs/bafybeicue33bcjgcu6mksfy4i5ova3igaw6va3qhvhau6w7kfazl2cif2q/1106.png" name="#436" description="No stake level currently" />
-                        <Card imgUrl="https://img-cdn.magiceden.dev/rs:fill:400:400:0:0/plain/https://nftstorage.link/ipfs/bafybeicue33bcjgcu6mksfy4i5ova3igaw6va3qhvhau6w7kfazl2cif2q/1107.png" name="#436" description="No stake level currently" />
-                        <Card imgUrl="https://img-cdn.magiceden.dev/rs:fill:400:400:0:0/plain/https://nftstorage.link/ipfs/bafybeicue33bcjgcu6mksfy4i5ova3igaw6va3qhvhau6w7kfazl2cif2q/1107.png" name="#436" description="No stake level currently" />
-                        <Card imgUrl="https://img-cdn.magiceden.dev/rs:fill:400:400:0:0/plain/https://nftstorage.link/ipfs/bafybeicue33bcjgcu6mksfy4i5ova3igaw6va3qhvhau6w7kfazl2cif2q/1107.png" name="#436" description="No stake level currently" />
+                        {isPageLoading ? <div className="flex flex-row justify-between gap-4 m-auto">
+
+                            <Skeleton sx={{ bgcolor: '#aba540' }} variant="rectangular" width={210} height={300} />
+                            <Skeleton sx={{ bgcolor: '#aba540' }} variant="rectangular" width={210} height={300} />
+                            <Skeleton sx={{ bgcolor: '#aba540' }} variant="rectangular" width={210} height={300} />
+                        </div> :
+                            nftList.length > 0 && nftList.map((data, key) => (
+                                <Card imgUrl={data.imgUrl} name={data.tokenId} description={data.description} key={key} mint={data.mint} />
+                            ))
+                        }
                     </div>
                 </section>
             </div>

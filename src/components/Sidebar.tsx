@@ -7,6 +7,10 @@ import { Togglebutton } from './SvgIcons';
 import { Stakingicon } from './SvgIcons';
 import { Galleryicon } from './SvgIcons';
 import { Leaderboard } from './SvgIcons';
+import {
+    WalletModalProvider,
+    WalletMultiButton,
+} from "@solana/wallet-adapter-react-ui";
 
 export default function Sidebar(props: {
     isSidebar: boolean,
@@ -21,13 +25,17 @@ export default function Sidebar(props: {
                 <button onClick={() => setIsSidebar(true)}>
                     <Togglebutton />
                 </button>
+
             </div>
             <div className="flex flex-row items-center pt-3">
-                <p className="font-4 text-black-100 font-bold pr-1">@Daniel154</p>
+                {/* <p className="font-4 text-black-100 font-bold pr-1">@Daniel154</p>
                 <div className="bg-[url('/img/star.svg')] w-4 h-4 flex justify-center items-center">
                     <img src="/img/tick.svg" className="w-2 h-[6px]" alt="" />
                 </div>
-                <img src="/img/baicai.svg" alt="" className="ml-[6px]" />
+                <img src="/img/baicai.svg" alt="" className="ml-[6px]" /> */}
+                <WalletModalProvider>
+                    <WalletMultiButton />
+                </WalletModalProvider>
             </div>
             <p className="font-[14px]] text-black-80">Hodler sice 2022</p>
             <ul className="flex flex-col ml-[6px] mt-7">

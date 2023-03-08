@@ -1,8 +1,98 @@
 import Image from "next/image";
 import Card from "../components/Card";
+import { useState, useEffect } from "react";
+import type { NextPage } from "next";
+import { PublicKey } from "@solana/web3.js";
+import {
+    WalletModalProvider,
+    WalletMultiButton,
+} from "@solana/wallet-adapter-react-ui";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { getParsedNftAccountsByOwner } from "@nfteyez/sol-rayz";
+import { CREATOR_ADDRESS } from "../config";
+
+import { web3 } from '@project-serum/anchor';
+
+import Skeleton from '@mui/material/Skeleton';
+import Stack from '@mui/material/Stack';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Avatar from '@mui/material/Avatar';
+import Grid from '@mui/material/Grid';
+export interface NFTType {
+    imgUrl: string;
+    tokenId: string;
+    description: string;
+    mint: string
+}
 function Mainstaking() {
+    const wallet = useWallet();
+    const [nftList, setNftList] = useState<NFTType[]>([]);
+    const [myBalance, setMyBalance] = useState<Number>(0);
+    const [selectState, setSlectState] = useState<boolean>(false);
+    const [isPageLoading, setIsPageLoading] = useState(false);
+    useEffect(() => {
+        getAllNfts();
+        // eslint-disable-next-line
+    }, [wallet.publicKey, wallet.connected]);
+    const getAllNfts = async () => {
+        setIsPageLoading(true);
+        const solConnection = new web3.Connection(web3.clusterApiUrl("devnet"));
+        if (wallet?.publicKey) {
+            let balance = await solConnection.getBalance(wallet.publicKey)
+            setMyBalance(balance)
+        }
+
+        if (wallet.publicKey === null) return;
+        try {
+            const nftList = await getParsedNftAccountsByOwner({
+                publicAddress: wallet.publicKey.toBase58(),
+                connection: solConnection,
+            });
+            console.log(nftList);
+
+            let list: NFTType[] = [];
+            if (nftList.length > 0) {
+                for (let item of nftList) {
+                    if (item.data?.creators)
+                        if (item.data?.creators[0].address === CREATOR_ADDRESS) {
+                            {
+                                console.log(item);
+
+                                try {
+                                    const response = await fetch(item?.data.uri, {
+                                        method: "GET",
+                                    });
+
+                                    const responsedata = await response.json();
+                                    //console.log(responsedata)
+                                    list.push({
+                                        imgUrl: responsedata.image,
+                                        tokenId: item?.data.name,
+                                        description: responsedata.description,
+                                        mint: item.mint
+
+                                    });
+
+                                } catch (error) {
+                                    console.error("Unable to fetch data:", error);
+                                }
+                            }
+                        }
+                }
+            }
+
+            console.log("nftList =>", list)
+            setNftList(list);
+            setIsPageLoading(false);
+        } catch (error) {
+            console.log(error);
+            setIsPageLoading(false);
+        }
+    };
+
     return (
-        <section className="justify-between overflow-hidden flex flex-col ml-[1px] w-full h-[654px] mb-6 rounded-[10px] mr-4">
+        <section className="justify-between overflow-hidden flex flex-col ml-[1px] w-full mb-6 rounded-[10px] mr-4">
             <div className="flex justify-between pb-3">
                 <h4 className="text-[14px] text-black-100 pt-3 pl-3 font-bold">Staking</h4>
             </div>
@@ -19,12 +109,19 @@ function Mainstaking() {
                         </div>
                     </div>
                     <div className="flex flex-wrap ml-1">
-                        <Card imgUrl="https://img-cdn.magiceden.dev/rs:fill:400:400:0:0/plain/https://nftstorage.link/ipfs/bafybeicue33bcjgcu6mksfy4i5ova3igaw6va3qhvhau6w7kfazl2cif2q/1927.png" name="#436" description="No stake level currently" />
-                        <Card imgUrl="https://img-cdn.magiceden.dev/rs:fill:400:400:0:0/plain/https://nftstorage.link/ipfs/bafybeicue33bcjgcu6mksfy4i5ova3igaw6va3qhvhau6w7kfazl2cif2q/1106.png" name="#436" description="No stake level currently" />
-                        <Card imgUrl="https://img-cdn.magiceden.dev/rs:fill:400:400:0:0/plain/https://nftstorage.link/ipfs/bafybeicue33bcjgcu6mksfy4i5ova3igaw6va3qhvhau6w7kfazl2cif2q/1107.png" name="#436" description="No stake level currently" />
-                        <Card imgUrl="https://img-cdn.magiceden.dev/rs:fill:400:400:0:0/plain/https://nftstorage.link/ipfs/bafybeicue33bcjgcu6mksfy4i5ova3igaw6va3qhvhau6w7kfazl2cif2q/1107.png" name="#436" description="No stake level currently" />
-                        <Card imgUrl="https://img-cdn.magiceden.dev/rs:fill:400:400:0:0/plain/https://nftstorage.link/ipfs/bafybeicue33bcjgcu6mksfy4i5ova3igaw6va3qhvhau6w7kfazl2cif2q/1107.png" name="#436" description="No stake level currently" />
+                        {isPageLoading ?
+                            <div className="flex flex-row justify-between gap-4 m-auto">
+
+                                <Skeleton sx={{ bgcolor: '#c1bccc' }} variant="rectangular" width={210} height={300} />
+                                <Skeleton sx={{ bgcolor: '#c1bccc' }} variant="rectangular" width={210} height={300} />
+                                <Skeleton sx={{ bgcolor: '#c1bccc' }} variant="rectangular" width={210} height={300} />
+                            </div>
+                            : nftList.length > 0 && nftList.map((data, key) => (
+                                <Card imgUrl={data.imgUrl} name={data.tokenId} description={data.description} key={key} mint={data.mint} />
+                            ))}
+
                     </div>
+
                 </section>
             </div>
         </section>)
