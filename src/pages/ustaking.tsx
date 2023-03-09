@@ -1,14 +1,17 @@
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useState } from "react";
 import Card from "../components/Ucard";
-import { withdrawNft } from "../context/transaction";
+import { solConnection, withdrawNft } from "../context/transaction";
 import { getUserPoolState } from "../context/transaction"
 import { web3 } from '@project-serum/anchor';
 import { useWallet } from "@solana/wallet-adapter-react";
 import { getParsedNftAccountsByOwner } from "@nfteyez/sol-rayz";
 import { CREATOR_ADDRESS } from "../config";
+import { programs } from '@metaplex/js';
 import Skeleton from '@mui/material/Skeleton';
-
+import {
+    TOKEN_PROGRAM_ID,
+} from '@solana/spl-token';
 export interface NFTType {
     imgUrl: string;
     tokenId: string;
@@ -18,62 +21,78 @@ export interface NFTType {
 function Ustaking() {
     const [isPageLoading, setIsPageLoading] = useState(false);
     const wallet = useWallet();
+    const [totalStaked, setTotalStaked] = useState(0);
     const [nftList, setNftList] = useState<NFTType[]>([]);
-    useEffect(() => {
-        getUserPoolState(wallet);
-        // eslint-disable-next-line
-    }, [wallet.publicKey, wallet.connected]);
-    const getAllNfts = async () => {
+
+
+
+
+
+    const getStakedNfts = async () => {
         setIsPageLoading(true);
-        const solConnection = new web3.Connection(web3.clusterApiUrl("devnet"));
-        if (wallet.publicKey === null) return;
-        try {
-            const nftList = await getParsedNftAccountsByOwner({
-                publicAddress: wallet.publicKey.toBase58(),
-                connection: solConnection,
-            });
-            console.log(nftList);
-
-            let list: NFTType[] = [];
-            if (nftList.length > 0) {
-                for (let item of nftList) {
-                    if (item.data?.creators)
-                        if (item.data?.creators[0].address === CREATOR_ADDRESS) {
-                            {
-                                console.log(item);
-
-                                try {
-                                    const response = await fetch(item?.data.uri, {
-                                        method: "GET",
-                                    });
-
-                                    const responsedata = await response.json();
-
-                                    list.push({
-                                        imgUrl: responsedata.image,
-                                        tokenId: item?.data.name,
-                                        description: responsedata.description,
-                                        mint: item.mint
-
-                                    });
-
-                                } catch (error) {
-                                    console.error("Unable to fetch data:", error);
-                                }
-                            }
-                        }
+        const data: { mint: string; stakedTime: number; }[] = [];
+        const userData = await getUserPoolState(wallet);
+        if (userData) {
+            const cnt = userData.itemCount.toNumber();
+            setTotalStaked(cnt);
+            if (cnt !== 0) {
+                for (let i = 0; i < cnt; i++) {
+                    data.push({
+                        mint: userData.items[i].nftAddr.toBase58(),
+                        stakedTime: userData.items[i].stakedTime.toNumber()
+                    })
                 }
             }
+            //initialize metadata
+            let {
+                metadata: { Metadata },
+            } = programs;
+            //create a list that contains data uri to fetch
+            const list = [];
+            for (let i = 0; i < cnt; i++) {
 
-            console.log("nftList =>", list)
-            setNftList(list);
+                let metadataAccount =
+                    await Metadata.getPDA(data[i].mint);
+                const metadata = await Metadata.load(
+                    solConnection,
+                    metadataAccount
+                );
+                list.push(metadata.data.data.uri)
+            }
+            console.log(list);
+            //create an array of nftlist
+            let nft_list: NFTType[] = [];
+
+            for (let i = 0; i < cnt; i++) {
+                const response = await fetch(list[i], {
+                    method: "GET",
+                });
+                const resdata = await response.json();
+                console.log('resdata----------->', resdata);
+
+                nft_list.push(
+                    {
+                        imgUrl: resdata.image,
+                        tokenId: resdata.name,
+                        description: resdata.description,
+                        mint: data[i].mint
+                    }
+                )
+            }
+            setNftList(nft_list);
+            console.log(nft_list);
+
             setIsPageLoading(false);
-        } catch (error) {
-            console.log(error);
-            setIsPageLoading(false);
+
+            return list;
         }
+    }
 
-    };
+    useEffect(() => {
+        if (wallet.publicKey) getStakedNfts();
+        // eslint-disable-next-line
+    }, [wallet.publicKey, wallet.connected]);
+
     return (
         <section className="justify-between overflow-hidden flex flex-col ml-[1px] w-full  mb-6 rounded-[10px] mr-4">
             <div className="flex justify-between pb-3">
@@ -99,7 +118,7 @@ function Ustaking() {
                             <Skeleton sx={{ bgcolor: '#aba540' }} variant="rectangular" width={210} height={300} />
                         </div> :
                             nftList.length > 0 && nftList.map((data, key) => (
-                                <Card imgUrl={data.imgUrl} name={data.tokenId} description={data.description} key={key} mint={data.mint} />
+                                <Card imgUrl={data.imgUrl} name={data.tokenId} description={data.description} key={key} />
                             ))
                         }
                     </div>

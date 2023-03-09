@@ -349,7 +349,6 @@ export const getUserPoolState = async (
     const cloneWindow: any = window;
     const userAddress = wallet.publicKey;
     //This is  phantom wallet public address
-    console.log(userAddress);
 
     const provider = new anchor.AnchorProvider(
         solConnection,
@@ -366,7 +365,6 @@ export const getUserPoolState = async (
         const poolAccount = await solConnection.getAccountInfo(userPoolKey);
         if (poolAccount === null) return null;
         const poolState = getParser<UserPool>(program, 'UserPool')(poolAccount);
-
         console.log('User Pool: ', poolState);
         return poolState as unknown as UserPool;
     } else {
