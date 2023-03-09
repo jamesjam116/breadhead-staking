@@ -118,7 +118,7 @@ function Ustaking() {
                             <Skeleton sx={{ bgcolor: '#aba540' }} variant="rectangular" width={210} height={300} />
                         </div> :
                             nftList.length > 0 && nftList.map((data, key) => (
-                                <Card imgUrl={data.imgUrl} name={data.tokenId} description={data.description} key={key} />
+                                <Card imgUrl={data.imgUrl} name={data.tokenId} description={data.description} key={key} mint={data.mint} />
                             ))
                         }
                     </div>

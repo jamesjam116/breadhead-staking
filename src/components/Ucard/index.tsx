@@ -6,7 +6,7 @@ import { withdrawNft } from "../../context/transaction"
 export default function Card(props: { imgUrl: string, name: string, description: string, mint: string }) {
     const [isLoading, setIsLoading] = useState(false);
     const wallet = useWallet();
-    const handleStake = async () => {
+    const handleUnStake = async () => {
         try {
             await withdrawNft(wallet, new PublicKey(props.mint), setIsLoading)
         } catch (error) {
@@ -43,7 +43,7 @@ export default function Card(props: { imgUrl: string, name: string, description:
                     </svg>
                     <p className="text-black-60 text-[10px] font-medium pt-1 pl-[10px]">Bronze nest in 4 days</p>
                 </div>
-                <button onClick={handleStake} className="border-[1px] border-[#0000001A] text-[#0074CC] text-[12px] bg-white-100 ml-2 mr-2 text-center pt-[5px] pb-[7px] rounded-[8px] mt-[10px] mb-[8px]">Unstake</button>
+                <button onClick={handleUnStake} className="border-[1px] border-[#0000001A] text-[#0074CC] text-[12px] bg-white-100 ml-2 mr-2 text-center pt-[5px] pb-[7px] rounded-[8px] mt-[10px] mb-[8px]">Unstake</button>
             </div>
 
         </div>

@@ -3,8 +3,11 @@ import { ReactNode } from "react";
 import { Bluecircle } from "../SvgIcons";
 import { Yellowcircle } from "../SvgIcons";
 import { Greycircle } from "../SvgIcons";
+import { useWallet } from "@solana/wallet-adapter-react";
+
 export default function Tableline(props: { rank: number, point: number }) {
-    const walletAddress = "A8rgsJecHutEamvb7e8p1a14LQH3vGRPr796CDaESMeu";
+    const wallet = useWallet();
+    const walletAddress = wallet.publicKey?.toBase58();
     return (
         <tr className=" text-center text-[14px]">
             <td className="flex items-center py-[12px]">
@@ -16,7 +19,7 @@ export default function Tableline(props: { rank: number, point: number }) {
                 </div>
                 <img src="/img/cat.png" alt="" className="w-7 h-7 ml-4" />
                 <span className="ml-2 text-[14px] text-black-100 leading-[18px]">
-                    {walletAddress.slice(0, 4) + "..." + walletAddress.slice(-4)}
+                    {walletAddress ? walletAddress.slice(0, 4) + "..." + walletAddress.slice(-4) : "Wallet Address Not Found"}
                 </span>
             </td>
             <td className="">{(1231).toLocaleString()}</td>
